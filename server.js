@@ -1,271 +1,256 @@
-// --- Updated server.js (Copy/Paste Ready) ---
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
-const cors = require('cors'); // <--- 1. REQUIRE CORS HERE
 
-// --- CRITICAL CONFIGURATION FOR CLOUD DEPLOYMENT ---
-// 1. Dynamic Port: Use the port assigned by Render, or default to 3000 locally.
-const PORT = process.env.PORT || 3000;
-// 2. Data File Paths: Ensure the data directory exists and define the file path.
-const DATA_DIR = path.join(__dirname, 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-// --- HELPER FUNCTIONS ---
-// ... (loadUsers and saveUsers functions remain the same)
+const PORT = 3000;
+const SUPPORTED_STOCKS = ['GOOG', 'TSLA', 'AMZN', 'META', 'NVDA'];
+const HISTORY_LENGTH = 60; // Store 60 seconds of history for the graph
+
+// --- Server State & Utility Functions ---
+
+// In-memory price data
+let currentPrices = SUPPORTED_STOCKS.reduce((acc, ticker) => {
+    acc[ticker] = (Math.random() * 100) + 100; // Start between 100 and 200
+    return acc;
+}, {});
+
+// In-memory price history (NEW)
+let priceHistory = SUPPORTED_STOCKS.reduce((acc, ticker) => {
+    // Populate history with initial prices for drawing
+    acc[ticker] = new Array(HISTORY_LENGTH).fill(currentPrices[ticker]); 
+    return acc;
+}, {});
+
 function loadUsers() {
-    if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-        console.log(`Data directory created at: ${DATA_DIR}`);
-    }
-    if (fs.existsSync(USERS_FILE)) {
-        try {
-            const data = fs.readFileSync(USERS_FILE, 'utf8');
-            return JSON.parse(data);
-        } catch (e) {
-            console.error('Error reading or parsing users.json:', e);
-            return {};
+    try {
+        // Ensure the directory exists
+        const dataDir = path.join(__dirname, 'data');
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir);
         }
+        const filePath = path.join(dataDir, 'users.json');
+        
+        if (!fs.existsSync(filePath)) {
+            fs.writeFileSync(filePath, '[]', 'utf8');
+            return [];
+        }
+
+        const data = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error("Error loading users.json:", error.message);
+        return [];
     }
-    return {};
 }
 
 function saveUsers(users) {
-    try {
-        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
-    } catch (e) {
-        console.error('Error saving users.json:', e);
-    }
+    fs.writeFileSync(path.join(__dirname, 'data', 'users.json'), JSON.stringify(users, null, 4), 'utf8');
 }
 
-let users = loadUsers();
+// --- Express Middleware & Routing ---
 
-// 🛑 CRITICAL FIX (from previous step): ENSURE DEFAULT TEST USER EXISTS IN MEMORY
-const DEFAULT_TEST_EMAIL = "your_login_email@example.com"; // <--- REMEMBER TO CHANGE THIS!
+app.use(express.static('public')); 
+app.use(express.json()); 
 
-if (!users[DEFAULT_TEST_EMAIL]) {
-    console.log(`[BOOTSTRAP] Creating default test user with stocks: ${DEFAULT_TEST_EMAIL}`);
-    const defaultToken = Buffer.from(DEFAULT_TEST_EMAIL).toString('base64');
-    
-    users[DEFAULT_TEST_EMAIL] = {
-        token: defaultToken,
-        subscribedStocks: ['GOOG', 'TSLA', 'AMZN', 'MSFT'], 
-        history: {}
-    };
-    saveUsers(users); 
-}
-// ----------------------------------------------------------------------
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 
-
-// --- EXPRESS SERVER SETUP ---
-const app = express();
-const server = http.createServer(app); 
-
-// 3. Trust Proxy: Essential for secure cloud deployment (WSS -> WS conversion)
-app.set('trust proxy', 1);
-
-// Middleware
-app.use(express.json());
-app.use(cors()); // <--- 2. USE CORS MIDDLEWARE HERE (Allows all origins)
-
-// Serve static files from the 'public' directory
-app.use(express.static('public'));
-
-// ... (The rest of your API routes and WebSocket logic is UNCHANGED) ...
-// (All the /api/register, /api/login, /api/history, wss.on('connection'), etc., go here)
-
-// --- API ROUTES ---
-// Helper function to get a user token (simplified)
-function generateToken(email) {
-    return Buffer.from(email).toString('base64');
-}
-
-// 1. Registration Route
+// NEW: API Endpoint for Registration
 app.post('/api/register', (req, res) => {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: 'Email required.' });
-
-    if (users[email]) {
-        return res.json({ success: false, message: 'User already exists. Please log in.' });
+    // NOTE: In a real app, you would handle the password here. 
+    // Since the client doesn't send a password, we only check the email for uniqueness.
+    
+    const users = loadUsers();
+    
+    if (users.find(u => u.email === email)) {
+        return res.status(409).json({ success: false, message: 'User already exists.' });
     }
 
-    // Create new user
-    const token = generateToken(email);
-    users[email] = {
-        token: token,
-        subscribedStocks: ['GOOG', 'TSLA'], // Default subscriptions for new registrations
-        history: {}
-    };
+    const token = 'token' + Math.random().toString(36).substring(2, 9); 
+    const newUser = { email, token, subscribedStocks: [] };
+    users.push(newUser);
     saveUsers(users);
 
-    res.json({ success: true, token, message: 'Registration successful. Logging in...' });
+    // After successful registration, log them in immediately and return token
+    res.json({ success: true, token, email, subscribedStocks: newUser.subscribedStocks, message: "Registration successful. Logging you in..." });
 });
 
-// 2. Login/Authentication Route (Also used to fetch subscriptions)
+
+// 1. API Endpoint for Login
 app.post('/api/login', (req, res) => {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: 'Email required.' });
+    const users = loadUsers();
+    
+    let user = users.find(u => u.email === email);
+    let token;
 
-    const user = users[email];
-    if (!user) {
-        // If user not found, they must register first.
-        return res.json({ success: false, message: 'User not found. Please register.' });
+    if (user) {
+        token = user.token;
+    } else {
+        // If the user doesn't exist, we send an error and ask them to register
+        // NOTE: This logic changed slightly from the original to encourage registration
+        return res.status(404).json({ success: false, message: 'User not found. Please register.' });
     }
 
-    // Generate a fresh token and send subscriptions
-    const token = generateToken(email);
-    user.token = token;
-    saveUsers(users);
-
-    res.json({ 
-        success: true, 
-        token: user.token,
-        subscribedStocks: user.subscribedStocks // This list is now guaranteed to have stocks (from the fix above)
-    });
+    res.json({ success: true, token, email, subscribedStocks: user.subscribedStocks });
 });
 
-// 3. Subscription Route
+// 2. API Endpoint for Subscription
 app.post('/api/subscribe', (req, res) => {
     const { token, ticker } = req.body;
-    const user = Object.values(users).find(u => u.token === token);
+    const users = loadUsers();
+    let user = users.find(u => u.token === token);
 
-    if (!user || !ticker) return res.status(401).json({ success: false, message: 'Invalid credentials or missing ticker.' });
-    if (user.subscribedStocks.includes(ticker)) return res.json({ success: false, message: `${ticker} is already subscribed.` });
+    if (!user) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    
+    if (!SUPPORTED_STOCKS.includes(ticker)) {
+        return res.status(400).json({ success: false, message: 'Unsupported stock ticker.' });
+    }
 
-    user.subscribedStocks.push(ticker);
-    saveUsers(users);
-    res.json({ success: true, message: `${ticker} added.` });
+    if (!user.subscribedStocks.includes(ticker)) {
+        user.subscribedStocks.push(ticker);
+        saveUsers(users);
+    }
+    
+    res.json({ success: true, message: `${ticker} subscribed.`, currentPrice: currentPrices[ticker] });
 });
 
-// 4. Unsubscribe Route
-// --- In server.js ---
-
-// 4. Unsubscribe Route
+// NEW: API Endpoint for Unsubscribe (client requested this)
 app.post('/api/unsubscribe', (req, res) => {
-    // 1. Destructure the email from the body
-    const { token, ticker, email } = req.body; 
+    const { token, ticker } = req.body;
+    const users = loadUsers();
+    let user = users.find(u => u.token === token);
+
+    if (!user) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
     
-    // 2. FIND USER BY EMAIL (the reliable way)
-    const user = users[email]; 
+    const initialLength = user.subscribedStocks.length;
+    user.subscribedStocks = user.subscribedStocks.filter(t => t !== ticker);
 
-    // 3. Check for valid user and ticker
-    if (!user || !ticker) return res.status(401).json({ success: false, message: 'Invalid credentials or missing ticker.' });
-
-    // (The rest of the logic remains the same)
-    const index = user.subscribedStocks.indexOf(ticker);
-    if (index > -1) {
-        user.subscribedStocks.splice(index, 1);
+    if (user.subscribedStocks.length < initialLength) {
         saveUsers(users);
-        res.json({ success: true, message: `${ticker} removed.` });
+        res.json({ success: true, message: `${ticker} unsubscribed.` });
     } else {
-        // This is the error message you were getting! 
-        // It happens when the lookup by token (the old way) failed, 
-        // but let's leave the message in case the array is manipulated manually.
-        res.json({ success: false, message: `${ticker} was not found in your subscriptions.` });
+        res.status(404).json({ success: false, message: 'Ticker not found in subscription list.' });
     }
 });
-// 5. Initial History Data Route (Used for chart creation)
+
+
+// 3. API Endpoint for Initial History Fetch (NEW for Graphs)
 app.get('/api/history/:ticker', (req, res) => {
-    const { ticker } = req.params;
-    // Simulate initial historical data (60 points)
-    const history = Array.from({ length: 60 }, () => parseFloat((Math.random() * 100).toFixed(2)));
-    res.json({ success: true, ticker, history });
+    const ticker = req.params.ticker.toUpperCase();
+    if (priceHistory[ticker]) {
+        res.json({ success: true, history: priceHistory[ticker] });
+    } else {
+        res.status(404).json({ success: false, message: 'Ticker history not found.' });
+    }
 });
 
-// 6. Recommendation Route (Simulated smart signals)
+// NEW: Minimal Recommendation Logic (For Client Code)
 app.get('/api/recommendations', (req, res) => {
-    const signals = ['BUY', 'DIP', 'HOLD', 'SELL'];
-    const tickers = ['GOOG', 'TSLA', 'AMZN', 'META', 'NVDA', 'SPOT', 'ADBE'];
-    
-    // Select 1 to 3 random signals
-    const numSignals = Math.floor(Math.random() * 3) + 1;
-    const recommendations = [];
+    // In a real app, this would be based on real-time analysis.
+    // Here, we provide a simple mock logic.
+    const recs = [];
+    const subscribed = loadUsers().find(u => u.token === req.query.token)?.subscribedStocks || [];
+    const available = SUPPORTED_STOCKS.filter(t => !subscribed.includes(t));
 
-    for (let i = 0; i < numSignals; i++) {
-        const signalType = signals[Math.floor(Math.random() * signals.length)];
-        const ticker = tickers[Math.floor(Math.random() * tickers.length)];
-        
-        recommendations.push({
-            ticker,
-            signalType,
-            reason: `Market indicator suggests a ${signalType.toLowerCase()} opportunity in ${ticker}.`
+    if (available.length > 0) {
+        const recTicker = available[Math.floor(Math.random() * available.length)];
+        recs.push({
+            ticker: recTicker,
+            signalType: 'BUY',
+            reason: `Strong volume detected in ${recTicker}. Potential upward momentum.`
         });
     }
 
-    res.json({ success: true, recommendations });
+    res.json({ success: true, recommendations: recs });
 });
 
 
-// --- WEB SOCKET SERVER SETUP ---
-const wss = new WebSocket.Server({ server });
-const connectedClients = new Map(); 
+// --- WebSocket (Real-time Engine) ---
 
-// Token authentication helper for WS connections
-function authenticateToken(token) {
-    return Object.values(users).find(u => u.token === token);
-}
+const clientSubscriptions = new Map(); 
 
 wss.on('connection', (ws, req) => {
-    // 1. Authenticate connection via URL token
     const urlParams = new URLSearchParams(req.url.split('?')[1]);
     const token = urlParams.get('token');
+
+    if (!token) {
+        ws.close(1008, 'Token required for WebSocket connection.');
+        return;
+    }
     
-    const user = authenticateToken(token);
+    const users = loadUsers();
+    const user = users.find(u => u.token === token);
+
     if (!user) {
-        ws.close(1008, 'Authentication failed');
+        ws.close(1008, 'Invalid token.');
         return;
     }
 
-    // 2. Map the token to the WebSocket connection
-    connectedClients.set(token, ws);
-    console.log(`Client connected: ${user.token}. Total clients: ${connectedClients.size}`);
+    clientSubscriptions.set(ws, user.subscribedStocks);
+    // console.log(`Client connected: ${user.email}. Subscribed to: ${user.subscribedStocks.join(', ')}`);
 
-    // 3. Handle disconnection
     ws.on('close', () => {
-        connectedClients.delete(token);
-        console.log(`Client disconnected: ${user.token}. Remaining: ${connectedClients.size}`);
-    });
-    
-    ws.on('error', (error) => {
-        console.error(`WebSocket Error for client ${user.token}:`, error);
+        clientSubscriptions.delete(ws);
+        // console.log(`Client disconnected.`);
     });
 });
 
+// Price Update and Broadcast Function
+function updateAndBroadcastPrices() {
+    // 1. Update prices for all supported stocks
+    for (const ticker of SUPPORTED_STOCKS) {
+        let current = currentPrices[ticker];
+        const changeFactor = (Math.random() - 0.5) * 0.03; 
+        let newPrice = current * (1 + changeFactor);
+        if (newPrice < 1) newPrice = 1; 
+        
+        currentPrices[ticker] = newPrice;
+        
+        // Update price history (NEW)
+        if (priceHistory[ticker].length >= HISTORY_LENGTH) {
+            priceHistory[ticker].shift(); // Remove oldest
+        }
+        priceHistory[ticker].push(newPrice); // Add newest
 
-// --- REAL-TIME DATA STREAM (SIMULATED) ---
-const priceData = {
-    GOOG: 140.00, TSLA: 250.00, AMZN: 180.00, META: 400.00, NVDA: 900.00, SPOT: 120.00, ADBE: 550.00
-};
+        const priceUpdateMessage = JSON.stringify({
+            ticker: ticker,
+            price: newPrice.toFixed(2)
+        });
 
-// Start a data stream interval (e.g., every second)
-setInterval(() => {
-    // 1. Update simulated prices randomly
-    for (const ticker in priceData) {
-        const change = (Math.random() * 2 - 1) * 0.5; // +/- 0.5% change max
-        priceData[ticker] = parseFloat((priceData[ticker] + change).toFixed(2));
-    }
-
-    // 2. Broadcast updated prices to subscribed clients
-    connectedClients.forEach((ws, token) => {
-        const user = authenticateToken(token);
-        if (!user || ws.readyState !== WebSocket.OPEN) return;
-
-        user.subscribedStocks.forEach(ticker => {
-            if (priceData[ticker] !== undefined) {
-                const message = JSON.stringify({ 
-                    ticker: ticker, 
-                    price: priceData[ticker] 
-                });
-                ws.send(message);
+        // 2. Broadcast updated price only to clients who are subscribed
+        wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                const subscribedTickers = clientSubscriptions.get(client);
+                
+                if (subscribedTickers && subscribedTickers.includes(ticker)) {
+                    client.send(priceUpdateMessage);
+                }
             }
         });
-    });
-}, 1000); // 1000ms = 1 second interval
+    }
+}
+
+// Start the real-time engine
+setInterval(updateAndBroadcastPrices, 1000); 
 
 
-// --- START THE SERVER ---
 server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
+    console.log(`Server running at http://localhost:${PORT}`);
+    console.log('---');
+    console.log('API Endpoints Ready: /api/login, /api/register, /api/subscribe, /api/unsubscribe, /api/history/:ticker, /api/recommendations');
+    console.log(`WebSocket Server Ready at ws://localhost:${PORT}`);
+    console.log('---');
 });
