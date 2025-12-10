@@ -110,16 +110,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchInitialHistory(ticker) {
-        try {
-            const response = await fetch('https://broker-view-live.onrender.com/api/history/${ticker}`);`
-            const data = await response.json();
-            if (data.success && data.history.length > 0) {
-                drawMiniChart(ticker, data.history);
-            }
-        } catch (error) {
-            console.error(`Error fetching history for ${ticker}:`, error);
+    try {
+        const response = await fetch(`https://broker-view-live.onrender.com/api/history/${ticker}`); 
+        
+        const data = await response.json();
+        if (data.success && data.history.length > 0) {
+            drawMiniChart(ticker, data.history);
         }
+    } catch (error) {
+        console.error(`Error fetching history for ${ticker}:`, error);
     }
+}
 
     // 4. Stock Card DOM Manipulation (UNMODIFIED)
     function createStockCard(ticker) {
