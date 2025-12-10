@@ -1,0 +1,448 @@
+/* Base Reset and Global Styles */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #f8f9fa;
+    --dark-bg: #212529;
+    --light-text: #f8f9fa;
+    --success: #28a745;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --up-flash: rgba(40, 167, 69, 0.4);
+    --down-flash: rgba(220, 53, 69, 0.4);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--dark-bg);
+    color: var(--light-text);
+    line-height: 1.6;
+}
+
+/* Login Page Styling */
+.login-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.login-container {
+    background: #343a40;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    width: 350px;
+    text-align: center;
+}
+
+.login-container h1 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+#login-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #495057;
+    border-radius: 4px;
+    background: #495057;
+    color: var(--light-text);
+}
+
+#login-form button {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#login-form button:hover {
+    background-color: #0056b3;
+}
+
+.error-text {
+    color: var(--danger);
+    margin-top: 10px;
+}
+
+
+/* Dashboard Layout */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background-color: #343a40;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.logo {
+    color: var(--primary-color);
+    font-size: 1.8em;
+}
+
+.user-info {
+    font-size: 0.9em;
+    color: #ced4da;
+}
+
+.logout-btn {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-left: 10px;
+    text-decoration: underline;
+}
+
+.dashboard-main {
+    padding: 30px;
+    max-width: 1200px;
+    margin: auto;
+}
+
+/* Subscription Panel */
+.subscription-panel {
+    background: #343a40;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.subscription-panel h2 {
+    margin-bottom: 15px;
+    color: #adb5bd;
+}
+
+#subscribe-form {
+    display: flex;
+    gap: 10px;
+}
+
+#ticker-select {
+    flex-grow: 1;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #495057;
+    background: #495057;
+    color: var(--light-text);
+}
+
+#subscribe-form button {
+    padding: 10px 20px;
+    background-color: var(--success);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#subscribe-form button:hover {
+    background-color: #1e7e34;
+}
+
+.status-message {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* Recommendation Panel */
+.recommendation-panel {
+    background: #343a40;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    border-top: 3px solid var(--warning); 
+}
+
+.recommendation-panel h2 {
+    color: var(--warning);
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+#recommendation-list p {
+    color: #adb5bd;
+    font-style: italic;
+}
+
+.recommendation-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed #495057;
+}
+
+.recommendation-item:last-child {
+    border-bottom: none;
+}
+
+.rec-ticker {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: var(--light-text);
+    width: 60px;
+}
+
+.rec-signal {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-right: 15px;
+    color: var(--dark-bg);
+}
+
+.signal-buy {
+    background-color: var(--success);
+}
+.signal-dip {
+    background-color: var(--warning);
+}
+
+.rec-reason {
+    flex-grow: 1;
+    font-style: italic;
+    font-size: 0.9em;
+    color: #adb5bd;
+}
+
+.rec-subscribe-btn {
+    padding: 5px 10px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 15px;
+    transition: background-color 0.3s;
+    white-space: nowrap;
+}
+
+/* Stock List Display */
+.stock-list h2 {
+    margin-bottom: 20px;
+    color: #adb5bd;
+}
+
+/* --- UPDATED: Stock Container for Stacking and Stability --- */
+.stock-container {
+    /* Replaced grid with flex for easier vertical stacking */
+    display: flex; 
+    flex-direction: column; /* Stack cards one after another (vertical) */
+    gap: 15px; /* Spacing between cards */
+    padding: 15px;
+    
+    /* CRITICAL FOR FIXED FRAME SIZE & SCROLLING */
+    max-height: 500px; /* Set a fixed height for the frame */
+    overflow-y: auto; /* Add vertical scrollbar when content overflows */
+    
+    border: 1px solid #495057; /* Visual border for the frame */
+    border-radius: 8px;
+    background-color: #2a2f34; /* Slightly lighter than the dark body background */
+}
+
+#no-stocks-message {
+    /* Removed grid-column since we are using flex now */
+    text-align: center;
+    color: #6c757d;
+    padding: 40px;
+    border: 1px dashed #495057;
+    border-radius: 8px;
+}
+
+/* --- UPDATED: Stock Card Layout (Bigger and Neater) --- */
+.stock-card {
+    background: #343a40;
+    padding: 20px; /* Increased padding for bigger feel */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Deeper shadow */
+    border-left: 5px solid var(--primary-color);
+    
+    /* Used flexbox for internal layout (Ticker/Price | Chart | Controls) */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 90px; /* Minimum height for a bigger card */
+    flex-shrink: 0; /* Ensures cards do not shrink inside the scroll container */
+}
+
+.ticker-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 15%; /* Give Ticker/Price a dedicated column */
+    min-width: 80px;
+}
+
+.ticker {
+    font-size: 1.6em; /* Bigger Ticker Text */
+    font-weight: bold;
+}
+
+.price-box {
+    text-align: left;
+    margin-top: 5px;
+}
+
+.currency {
+    font-size: 1.1em;
+    color: #adb5bd;
+}
+
+.price {
+    font-size: 1.5em; /* Bigger Price Text */
+    font-weight: 600;
+}
+
+.chart-area {
+    width: 45%; /* Give the chart plenty of room */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.chart-area canvas {
+    background-color: #495057;
+    border-radius: 4px;
+    width: 100%; /* Make canvas fill its container */
+    height: 50px; /* Fixed height for the mini-chart */
+}
+
+.controls {
+    display: flex;
+    flex-direction: column; /* Stack change and remove button */
+    align-items: flex-end; /* Align right */
+    width: 20%;
+    min-width: 100px;
+}
+
+.change {
+    font-size: 1.1em; /* Bigger change text */
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.remove-btn {
+    padding: 5px 10px;
+    background-color: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s;
+}
+
+.remove-btn:hover {
+    background-color: #bd2130;
+}
+
+/* Price Change Visual Cues (UNMODIFIED) */
+.price-up {
+    color: var(--success);
+    background-color: var(--up-flash);
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+.price-down {
+    color: var(--danger);
+    background-color: var(--down-flash);
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    /* Resetting the stock card layout for mobile vertical stacking */
+    .stock-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .ticker-info {
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+        min-width: auto;
+    }
+    .chart-area {
+        order: 3; /* Move chart below info and controls */
+        width: 100%;
+    }
+    .controls {
+        order: 2; /* Keep controls visible near the top */
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+        min-width: auto;
+    }
+    .remove-btn {
+        flex-grow: 1;
+        margin-left: 10px;
+    }
+    .change {
+        flex-grow: 1;
+        text-align: left;
+        margin-bottom: 0;
+    }
+
+    /* Existing Mobile Adjustments (UNMODIFIED) */
+    .dashboard-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    .dashboard-main {
+        padding: 15px;
+    }
+    .recommendation-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    .rec-reason {
+        order: 3;
+    }
+    .rec-subscribe-btn {
+        order: 4;
+        margin-left: 0;
+        width: 100%;
+        margin-top: 5px;
+    }
+}
+/* ... (Existing styles remain the same) ... */
+
+/* NEW: Styles for the switch link between login/register */
+.auth-switch {
+    margin-top: 15px;
+    font-size: 0.9em;
+    color: #adb5bd;
+}
+
+.auth-switch a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.auth-switch a:hover {
+    text-decoration: underline;
+}
+
+/* ... (Rest of styles.css) ... */
