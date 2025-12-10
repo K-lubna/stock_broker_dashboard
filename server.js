@@ -39,6 +39,8 @@ function loadUsers() {
 // Function to save user data
 function saveUsers(users) {
     try {
+        // NOTE: This save operation will likely fail on Render's ephemeral filesystem,
+        // but we keep it for local testing and consistency.
         fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
     } catch (e) {
         console.error('Error saving users.json:', e);
@@ -47,19 +49,35 @@ function saveUsers(users) {
 
 let users = loadUsers();
 
+// 🛑 CRITICAL FIX ADDED HERE: ENSURE DEFAULT TEST USER EXISTS IN MEMORY
+const DEFAULT_TEST_EMAIL = "26lubna26@gmail.com"; // <--- CHANGE THIS TO YOUR LOGIN EMAIL!
+
+if (!users[DEFAULT_TEST_EMAIL]) {
+    console.log(`[BOOTSTRAP] Creating default test user with stocks: ${DEFAULT_TEST_EMAIL}`);
+    const defaultToken = Buffer.from(DEFAULT_TEST_EMAIL).toString('base64');
+    
+    users[DEFAULT_TEST_EMAIL] = {
+        token: defaultToken,
+        // *** THIS LIST POPULATES YOUR DASHBOARD CARDS ON INITIAL LOAD ***
+        subscribedStocks: ['GOOG', 'TSLA', 'AMZN', 'MSFT'], 
+        history: {}
+    };
+    saveUsers(users); // Save it, but rely on it being in memory
+}
+// ----------------------------------------------------------------------
+
+
 // --- EXPRESS SERVER SETUP ---
 const app = express();
 const server = http.createServer(app); // Create HTTP server for Express and WS
 
 // 3. Trust Proxy: Essential for secure cloud deployment (WSS -> WS conversion)
-// This lets Express know it's running behind a proxy like Render's load balancer.
 app.set('trust proxy', 1);
 
 // Middleware
 app.use(express.json());
 
 // Serve static files from the 'public' directory
-// Since server.js is in the root, this is correct:
 app.use(express.static('public'));
 
 
@@ -83,7 +101,7 @@ app.post('/api/register', (req, res) => {
     const token = generateToken(email);
     users[email] = {
         token: token,
-        subscribedStocks: ['GOOG', 'TSLA'], // Default subscriptions
+        subscribedStocks: ['GOOG', 'TSLA'], // Default subscriptions for new registrations
         history: {}
     };
     saveUsers(users);
@@ -98,6 +116,7 @@ app.post('/api/login', (req, res) => {
 
     const user = users[email];
     if (!user) {
+        // If user not found, they must register first.
         return res.json({ success: false, message: 'User not found. Please register.' });
     }
 
@@ -109,7 +128,7 @@ app.post('/api/login', (req, res) => {
     res.json({ 
         success: true, 
         token: user.token,
-        subscribedStocks: user.subscribedStocks
+        subscribedStocks: user.subscribedStocks // This list is now guaranteed to have stocks (from the fix above)
     });
 });
 
@@ -123,7 +142,6 @@ app.post('/api/subscribe', (req, res) => {
 
     user.subscribedStocks.push(ticker);
     saveUsers(users);
-    // Notify the user client to update (handled by client-side loadSubscriptions)
     res.json({ success: true, message: `${ticker} added.` });
 });
 
