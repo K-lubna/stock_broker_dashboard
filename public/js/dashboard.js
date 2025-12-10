@@ -28,15 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. NEW: Unsubscribe Logic (Must be global for inline 'onclick')
     // =========================================================================
 
-    async function unsubscribeStock(ticker) {
-        const token = localStorage.getItem('userToken');
-        if (!token) {
-            alert("Session expired. Please log in again.");
-            window.location.href = '/login.html';
-            return;
-        }
-
-        try {
+  async function unsubscribeStock(ticker) {
+    const token = localStorage.getItem('userToken');
+    const email = localStorage.getItem('userEmail'); // <--- 1. GET THE EMAIL HERE!
+    
+  
+     try {
             const response = await fetch('https://broker-view-live.onrender.com/api/unsubscribe',  {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
