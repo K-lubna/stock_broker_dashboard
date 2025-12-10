@@ -50,7 +50,7 @@ function saveUsers(users) {
 let users = loadUsers();
 
 // 🛑 CRITICAL FIX ADDED HERE: ENSURE DEFAULT TEST USER EXISTS IN MEMORY
-const DEFAULT_TEST_EMAIL = "26lubna26@gmail.com"; // <--- CHANGE THIS TO YOUR LOGIN EMAIL!
+const DEFAULT_TEST_EMAIL = "your_login_email@example.com"; // <--- CHANGE THIS TO YOUR LOGIN EMAIL!
 
 if (!users[DEFAULT_TEST_EMAIL]) {
     console.log(`[BOOTSTRAP] Creating default test user with stocks: ${DEFAULT_TEST_EMAIL}`);
