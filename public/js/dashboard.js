@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // NOTE: Fetching from a new endpoint '/api/recommendations'
-            const response = await fetch(\https://www.google.com/search?q=https://broker-view-live.onrender.com/api/recommendations%3Ftoken%3D${userToken}`)`; 
+           const response = await fetch(\https://www.google.com/url?sa=E&source=gmail&q=https://broker-view-live.onrender.com/api/recommendations?token=${userToken}`);` 
             const data = await response.json();
 
             if (data.success && data.recommendations && data.recommendations.length > 0) {
