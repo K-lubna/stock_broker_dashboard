@@ -28,46 +28,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. NEW: Unsubscribe Logic (Must be global for inline 'onclick')
     // =========================================================================
 
-async function unsubscribeStock(ticker) {
-    const token = localStorage.getItem('userToken');
-    const email = localStorage.getItem('userEmail'); // <--- Still need this variable!
-    
-
-    // This is the CRUCIAL part: ensure the email is in the body
-    try {
-        const response = await fetch('https://broker-view-live.onrender.com/api/unsubscribe',  {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: token, ticker: ticker, email: email }) 
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            console.log(`${ticker} successfully removed.`);
-            
-            const stockElement = document.getElementById(`stock-${ticker}`);
-            if (stockElement) {
-                stockElement.remove();
-            }
-            
-            const container = document.getElementById('stock-container');
-            const message = document.getElementById('no-stocks-message');
-            if (container && container.children.length === 0 && message) {
-                message.style.display = 'block';
-            }
-            
-            loadRecommendations(); 
-            
-        } else {
-            alert(`Failed to remove ${ticker}: ${result.message}`);
+    async function unsubscribeStock(ticker) {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            alert("Session expired. Please log in again.");
+            window.location.href = '/login.html';
+            return;
         }
-    } catch (error) {
-        console.error('Error during unsubscribe:', error);
-        alert('A network error occurred while trying to unsubscribe.');
+
+        try {
+            const response = await fetch('http://localhost:3000/api/unsubscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: token, ticker: ticker })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                console.log(`${ticker} successfully removed.`);
+                
+                const stockElement = document.getElementById(`stock-${ticker}`);
+                if (stockElement) {
+                    stockElement.remove();
+                }
+                
+                const container = document.getElementById('stock-container');
+                const message = document.getElementById('no-stocks-message');
+                if (container && container.children.length === 0 && message) {
+                    message.style.display = 'block';
+                }
+                
+                // IMPORTANT: Reload recommendations when watchlist changes
+                loadRecommendations(); 
+                
+            } else {
+                alert(`Failed to remove ${ticker}: ${result.message}`);
+            }
+        } catch (error) {
+            console.error('Error during unsubscribe:', error);
+            alert('A network error occurred while trying to unsubscribe.');
+        }
     }
-}
-// ---------------------------------------------------------------------
+    
+    window.unsubscribeStock = unsubscribeStock;
+
     
     // =========================================================================
     // 3. Subscription & Data Load Functions
@@ -75,8 +80,8 @@ async function unsubscribeStock(ticker) {
 
     async function loadSubscriptions() {
         try {
-            
-            const response = await fetch('https://broker-view-live.onrender.com/api/login',{
+            // Using the /api/login endpoint as per your current code structure
+            const response = await fetch('http://localhost:3000/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: userEmail })
@@ -105,17 +110,16 @@ async function unsubscribeStock(ticker) {
     }
 
     async function fetchInitialHistory(ticker) {
-    try {
-        const response = await fetch(`https://broker-view-live.onrender.com/api/history/${ticker}`); 
-        
-        const data = await response.json();
-        if (data.success && data.history.length > 0) {
-            drawMiniChart(ticker, data.history);
+        try {
+            const response = await fetch(`http://localhost:3000/api/history/${ticker}`);
+            const data = await response.json();
+            if (data.success && data.history.length > 0) {
+                drawMiniChart(ticker, data.history);
+            }
+        } catch (error) {
+            console.error(`Error fetching history for ${ticker}:`, error);
         }
-    } catch (error) {
-        console.error(`Error fetching history for ${ticker}:`, error);
     }
-}
 
     // 4. Stock Card DOM Manipulation (UNMODIFIED)
     function createStockCard(ticker) {
@@ -230,30 +234,28 @@ async function unsubscribeStock(ticker) {
 
 
     // 7. WebSocket Connection (UNMODIFIED)
-    // 7. WebSocket Connection (CLEANED)
-function connectWebSocket(token) {
-    
-    // This line must be exactly correct. NO SPACES, NO EXTRA CHARACTERS.
-    const ws = new WebSocket(`wss://broker-view-live.onrender.com?token=${token}`);
+    function connectWebSocket(token) {
+        const ws = new WebSocket(`ws://localhost:3000?token=${token}`);
 
-    ws.onopen = () => console.log('WebSocket connection established.');
-    
-    ws.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            updateStockPrice(data.ticker, data.price);
-        } catch (error) {
-            console.error('Error parsing WebSocket message:', event.data, error);
-        }
-    };
+        ws.onopen = () => console.log('WebSocket connection established.');
+        
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                updateStockPrice(data.ticker, data.price);
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', event.data, error);
+            }
+        };
 
-    ws.onclose = () => {
-        console.log('WebSocket connection closed. Attempting to reconnect in 5 seconds...');
-        setTimeout(() => connectWebSocket(token), 5000);
-    };
+        ws.onclose = () => {
+            console.log('WebSocket connection closed. Attempting to reconnect in 5 seconds...');
+            setTimeout(() => connectWebSocket(token), 5000);
+        };
 
-    ws.onerror = (error) => console.error('WebSocket error:', error);
-} // <--- Ensure this closing brace is present!
+        ws.onerror = (error) => console.error('WebSocket error:', error);
+    }
+
     // 8. Subscription Handler (UNMODIFIED)
     subscribeForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -262,7 +264,7 @@ function connectWebSocket(token) {
         if (!ticker) return;
 
         try {
-            const response = await fetch('https://broker-view-live.onrender.com/api/subscribe', {
+            const response = await fetch('http://localhost:3000/api/subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: userToken, ticker })
@@ -303,8 +305,7 @@ function connectWebSocket(token) {
 
         try {
             // NOTE: Fetching from a new endpoint '/api/recommendations'
-           // ONLY the Render URL should be inside the fetch call, wrapped in backticks
-const response = await fetch(`https://broker-view-live.onrender.com/api/recommendations?token=${userToken}`);
+            const response = await fetch(`http://localhost:3000/api/recommendations?token=${userToken}`); 
             const data = await response.json();
 
             if (data.success && data.recommendations && data.recommendations.length > 0) {
