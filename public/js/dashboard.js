@@ -236,8 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. WebSocket Connection (UNMODIFIED)
     function connectWebSocket(token) {
-        const ws = new WebSocket(wss://broker-view-live.onrender.com?token=${token}`)`
-
+     
+       const ws = new WebSocket(`wss://broker-view-live.onrender.com?token=${token}`);
         ws.onopen = () => console.log('WebSocket connection established.');
         
         ws.onmessage = (event) => {
@@ -306,7 +306,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // NOTE: Fetching from a new endpoint '/api/recommendations'
-           const response = await fetch(\https://www.google.com/url?sa=E&source=gmail&q=https://broker-view-live.onrender.com/api/recommendations?token=${userToken}`);` 
+           // ONLY the Render URL should be inside the fetch call, wrapped in backticks
+const response = await fetch(`https://broker-view-live.onrender.com/api/recommendations?token=${userToken}`);
             const data = await response.json();
 
             if (data.success && data.recommendations && data.recommendations.length > 0) {
