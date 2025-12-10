@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchInitialHistory(ticker) {
         try {
-            const response = await fetch(\https://broker-view-live.onrender.com/api/history/${ticker}`);`
+            const response = await fetch('https://broker-view-live.onrender.com/api/history/${ticker}`);`
             const data = await response.json();
             if (data.success && data.history.length > 0) {
                 drawMiniChart(ticker, data.history);
