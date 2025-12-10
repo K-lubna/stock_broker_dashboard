@@ -235,28 +235,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // 7. WebSocket Connection (UNMODIFIED)
-    function connectWebSocket(token) {
-     
-       const ws = new WebSocket(`wss://broker-view-live.onrender.com?token=${token}`);
-        ws.onopen = () => console.log('WebSocket connection established.');
-        
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                updateStockPrice(data.ticker, data.price);
-            } catch (error) {
-                console.error('Error parsing WebSocket message:', event.data, error);
-            }
-        };
+    // 7. WebSocket Connection (CLEANED)
+function connectWebSocket(token) {
+    
+    // This line must be exactly correct. NO SPACES, NO EXTRA CHARACTERS.
+    const ws = new WebSocket(`wss://broker-view-live.onrender.com?token=${token}`);
 
-        ws.onclose = () => {
-            console.log('WebSocket connection closed. Attempting to reconnect in 5 seconds...');
-            setTimeout(() => connectWebSocket(token), 5000);
-        };
+    ws.onopen = () => console.log('WebSocket connection established.');
+    
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            updateStockPrice(data.ticker, data.price);
+        } catch (error) {
+            console.error('Error parsing WebSocket message:', event.data, error);
+        }
+    };
 
-        ws.onerror = (error) => console.error('WebSocket error:', error);
-    }
+    ws.onclose = () => {
+        console.log('WebSocket connection closed. Attempting to reconnect in 5 seconds...');
+        setTimeout(() => connectWebSocket(token), 5000);
+    };
 
+    ws.onerror = (error) => console.error('WebSocket error:', error);
+} // <--- Ensure this closing brace is present!
     // 8. Subscription Handler (UNMODIFIED)
     subscribeForm.addEventListener('submit', async (e) => {
         e.preventDefault();
