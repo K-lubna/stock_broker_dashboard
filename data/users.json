@@ -1,0 +1,33 @@
+[
+    {
+        "email": "userA@test.com",
+        "token": "tokenA",
+        "subscribedStocks": [
+            "GOOG",
+            "TSLA"
+        ]
+    },
+    {
+        "email": "userB@test.com",
+        "token": "tokenB",
+        "subscribedStocks": [
+            "AMZN",
+            "META"
+        ]
+    },
+    {
+        "email": "lubnak2602@gmail.com",
+        "token": "tokenhy233i2",
+        "subscribedStocks": [
+            "GOOG",
+            "AMZN"
+        ]
+    },
+    {
+        "email": "26lubna26@gmail.com",
+        "token": "tokenkh5d5h9",
+        "subscribedStocks": [
+            "AMZN"
+        ]
+    }
+]
