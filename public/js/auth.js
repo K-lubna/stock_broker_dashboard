@@ -30,8 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                const response = await fetch('https://broker-view-live.onrender.com/api/login', { 
-
+                const response = await fetch('http://localhost:3000/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -66,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 // This hits the new registration endpoint
-                const response = await fetch('https://broker-view-live.onrender.com/api/login', {
+                const response = await fetch('http://localhost:3000/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
