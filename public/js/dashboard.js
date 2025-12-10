@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchInitialHistory(ticker) {
         try {
-            const response = await fetch(`http://localhost:3000/api/history/${ticker}`);
+            const response = await fetch(\https://broker-view-live.onrender.com/api/history/${ticker}`);`
             const data = await response.json();
             if (data.success && data.history.length > 0) {
                 drawMiniChart(ticker, data.history);
@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. WebSocket Connection (UNMODIFIED)
     function connectWebSocket(token) {
-        const ws = new WebSocket(`ws://localhost:3000?token=${token}`);
+        const ws = new WebSocket(\wss://broker-view-live.onrender.com?token=${token}`)`
 
         ws.onopen = () => console.log('WebSocket connection established.');
         
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!ticker) return;
 
         try {
-            const response = await fetch('http://localhost:3000/api/subscribe', {
+            const response = await fetch('https://broker-view-live.onrender.com/api/subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: userToken, ticker })
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // NOTE: Fetching from a new endpoint '/api/recommendations'
-            const response = await fetch(`http://localhost:3000/api/recommendations?token=${userToken}`); 
+            const response = await fetch(\https://www.google.com/search?q=https://broker-view-live.onrender.com/api/recommendations%3Ftoken%3D${userToken}`)`; 
             const data = await response.json();
 
             if (data.success && data.recommendations && data.recommendations.length > 0) {
