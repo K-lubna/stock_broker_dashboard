@@ -28,48 +28,46 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. NEW: Unsubscribe Logic (Must be global for inline 'onclick')
     // =========================================================================
 
-  async function unsubscribeStock(ticker) {
+async function unsubscribeStock(ticker) {
     const token = localStorage.getItem('userToken');
-    const email = localStorage.getItem('userEmail'); // <--- 1. GET THE EMAIL HERE!
+    const email = localStorage.getItem('userEmail'); // <--- Still need this variable!
     
-  
-     try {
-            const response = await fetch('https://broker-view-live.onrender.com/api/unsubscribe',  {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: token, ticker: ticker })
-            });
 
-            const result = await response.json();
+    // This is the CRUCIAL part: ensure the email is in the body
+    try {
+        const response = await fetch('https://broker-view-live.onrender.com/api/unsubscribe',  {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: token, ticker: ticker, email: email }) 
+        });
 
-            if (result.success) {
-                console.log(`${ticker} successfully removed.`);
-                
-                const stockElement = document.getElementById(`stock-${ticker}`);
-                if (stockElement) {
-                    stockElement.remove();
-                }
-                
-                const container = document.getElementById('stock-container');
-                const message = document.getElementById('no-stocks-message');
-                if (container && container.children.length === 0 && message) {
-                    message.style.display = 'block';
-                }
-                
-                // IMPORTANT: Reload recommendations when watchlist changes
-                loadRecommendations(); 
-                
-            } else {
-                alert(`Failed to remove ${ticker}: ${result.message}`);
+        const result = await response.json();
+
+        if (result.success) {
+            console.log(`${ticker} successfully removed.`);
+            
+            const stockElement = document.getElementById(`stock-${ticker}`);
+            if (stockElement) {
+                stockElement.remove();
             }
-        } catch (error) {
-            console.error('Error during unsubscribe:', error);
-            alert('A network error occurred while trying to unsubscribe.');
+            
+            const container = document.getElementById('stock-container');
+            const message = document.getElementById('no-stocks-message');
+            if (container && container.children.length === 0 && message) {
+                message.style.display = 'block';
+            }
+            
+            loadRecommendations(); 
+            
+        } else {
+            alert(`Failed to remove ${ticker}: ${result.message}`);
         }
+    } catch (error) {
+        console.error('Error during unsubscribe:', error);
+        alert('A network error occurred while trying to unsubscribe.');
     }
-    
-    window.unsubscribeStock = unsubscribeStock;
-
+}
+// ---------------------------------------------------------------------
     
     // =========================================================================
     // 3. Subscription & Data Load Functions
@@ -77,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadSubscriptions() {
         try {
-            // Using the /api/login endpoint as per your current code structure
+            
             const response = await fetch('https://broker-view-live.onrender.com/api/login',{
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
