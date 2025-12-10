@@ -1,8 +1,10 @@
+// --- Updated server.js (Copy/Paste Ready) ---
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
+const cors = require('cors'); // <--- 1. REQUIRE CORS HERE
 
 // --- CRITICAL CONFIGURATION FOR CLOUD DEPLOYMENT ---
 // 1. Dynamic Port: Use the port assigned by Render, or default to 3000 locally.
@@ -12,35 +14,26 @@ const DATA_DIR = path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 // --- HELPER FUNCTIONS ---
-
-// Function to initialize or load user data
+// ... (loadUsers and saveUsers functions remain the same)
 function loadUsers() {
-    // Ensure the data directory exists before trying to read the file
     if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
         console.log(`Data directory created at: ${DATA_DIR}`);
     }
-
-    // Check if the users file exists and has content
     if (fs.existsSync(USERS_FILE)) {
         try {
             const data = fs.readFileSync(USERS_FILE, 'utf8');
             return JSON.parse(data);
         } catch (e) {
             console.error('Error reading or parsing users.json:', e);
-            // If there's an error, initialize an empty user object
             return {};
         }
     }
-    // If file doesn't exist, start with an empty object
     return {};
 }
 
-// Function to save user data
 function saveUsers(users) {
     try {
-        // NOTE: This save operation will likely fail on Render's ephemeral filesystem,
-        // but we keep it for local testing and consistency.
         fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
     } catch (e) {
         console.error('Error saving users.json:', e);
@@ -49,8 +42,8 @@ function saveUsers(users) {
 
 let users = loadUsers();
 
-// 🛑 CRITICAL FIX ADDED HERE: ENSURE DEFAULT TEST USER EXISTS IN MEMORY
-const DEFAULT_TEST_EMAIL = "your_login_email@example.com"; // <--- CHANGE THIS TO YOUR LOGIN EMAIL!
+// 🛑 CRITICAL FIX (from previous step): ENSURE DEFAULT TEST USER EXISTS IN MEMORY
+const DEFAULT_TEST_EMAIL = "your_login_email@example.com"; // <--- REMEMBER TO CHANGE THIS!
 
 if (!users[DEFAULT_TEST_EMAIL]) {
     console.log(`[BOOTSTRAP] Creating default test user with stocks: ${DEFAULT_TEST_EMAIL}`);
@@ -58,31 +51,32 @@ if (!users[DEFAULT_TEST_EMAIL]) {
     
     users[DEFAULT_TEST_EMAIL] = {
         token: defaultToken,
-        // *** THIS LIST POPULATES YOUR DASHBOARD CARDS ON INITIAL LOAD ***
         subscribedStocks: ['GOOG', 'TSLA', 'AMZN', 'MSFT'], 
         history: {}
     };
-    saveUsers(users); // Save it, but rely on it being in memory
+    saveUsers(users); 
 }
 // ----------------------------------------------------------------------
 
 
 // --- EXPRESS SERVER SETUP ---
 const app = express();
-const server = http.createServer(app); // Create HTTP server for Express and WS
+const server = http.createServer(app); 
 
 // 3. Trust Proxy: Essential for secure cloud deployment (WSS -> WS conversion)
 app.set('trust proxy', 1);
 
 // Middleware
 app.use(express.json());
+app.use(cors()); // <--- 2. USE CORS MIDDLEWARE HERE (Allows all origins)
 
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
 
+// ... (The rest of your API routes and WebSocket logic is UNCHANGED) ...
+// (All the /api/register, /api/login, /api/history, wss.on('connection'), etc., go here)
 
 // --- API ROUTES ---
-
 // Helper function to get a user token (simplified)
 function generateToken(email) {
     return Buffer.from(email).toString('base64');
@@ -196,7 +190,7 @@ app.get('/api/recommendations', (req, res) => {
 
 // --- WEB SOCKET SERVER SETUP ---
 const wss = new WebSocket.Server({ server });
-const connectedClients = new Map(); // Map to store clients: token -> ws
+const connectedClients = new Map(); 
 
 // Token authentication helper for WS connections
 function authenticateToken(token) {
