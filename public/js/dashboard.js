@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. WebSocket Connection (UNMODIFIED)
     function connectWebSocket(token) {
-        const ws = new WebSocket(\wss://broker-view-live.onrender.com?token=${token}`)`
+        const ws = new WebSocket(wss://broker-view-live.onrender.com?token=${token}`)`
 
         ws.onopen = () => console.log('WebSocket connection established.');
         
