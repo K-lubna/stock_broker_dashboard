@@ -140,22 +140,32 @@ app.post('/api/subscribe', (req, res) => {
 });
 
 // 4. Unsubscribe Route
-app.post('/api/unsubscribe', (req, res) => {
-    const { token, ticker } = req.body;
-    const user = Object.values(users).find(u => u.token === token);
+// --- In server.js ---
 
-    if (!user || !ticker) return res.status(401).json({ success: false, message: 'Invalid credentials or missing ticker.' });
+// 4. Unsubscribe Route
+app.post('/api/unsubscribe', (req, res) => {
+    // 1. Destructure the email from the body
+    const { token, ticker, email } = req.body; 
     
+    // 2. FIND USER BY EMAIL (the reliable way)
+    const user = users[email]; 
+
+    // 3. Check for valid user and ticker
+    if (!user || !ticker) return res.status(401).json({ success: false, message: 'Invalid credentials or missing ticker.' });
+
+    // (The rest of the logic remains the same)
     const index = user.subscribedStocks.indexOf(ticker);
     if (index > -1) {
         user.subscribedStocks.splice(index, 1);
         saveUsers(users);
         res.json({ success: true, message: `${ticker} removed.` });
     } else {
+        // This is the error message you were getting! 
+        // It happens when the lookup by token (the old way) failed, 
+        // but let's leave the message in case the array is manipulated manually.
         res.json({ success: false, message: `${ticker} was not found in your subscriptions.` });
     }
 });
-
 // 5. Initial History Data Route (Used for chart creation)
 app.get('/api/history/:ticker', (req, res) => {
     const { ticker } = req.params;
