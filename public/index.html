@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Client Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="dashboard-header">
+        <h1 class="logo">BrokerView</h1>
+        <div class="user-info">
+            Welcome, <span id="user-email">Guest</span> | 
+            <button id="logout-btn" class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <main class="dashboard-main">
+        
+        <section class="subscription-panel">
+            <h2>Subscribe to a Stock</h2>
+            <form id="subscribe-form">
+                <select id="ticker-select" required>
+                    <option value="" disabled selected>Select Ticker</option>
+                    <option value="GOOG">GOOG (Alphabet)</option>
+                    <option value="TSLA">TSLA (Tesla)</option>
+                    <option value="AMZN">AMZN (Amazon)</option>
+                    <option value="META">META (Meta Platforms)</option>
+                    <option value="NVDA">NVDA (NVIDIA)</option>
+                </select>
+                <button type="submit">Subscribe</button>
+            </form>
+            <p id="subscribe-status" class="status-message"></p>
+        </section>
+        
+        <section class="recommendation-panel">
+            <h2>🤖 Smart Stock Suggestions</h2>
+            <div id="recommendation-list">
+                <p id="no-recommendations">Analyzing market movement...</p>
+            </div>
+        </section>
+
+        <section class="stock-list">
+            <h2>My Subscribed Stocks</h2>
+            <div id="stock-container" class="stock-container">
+                <p id="no-stocks-message">You are not subscribed to any stocks yet.</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
